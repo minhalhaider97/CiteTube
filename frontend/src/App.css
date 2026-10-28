@@ -1,0 +1,22 @@
+.font-sans {
+  font-family: var(--font-sans, 'Geist', sans-serif);
+}
+
+.font-mono {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
+
+button, input, a {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.glass-panel {
+  background-color: #141416;
+  border: 1px solid #232326;
+}
+
+.glass-panel-hover:hover {
+  border-color: #3F3F46;
+}

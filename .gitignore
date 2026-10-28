@@ -1,0 +1,18 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Node Dependencies & Build Outputs
+node_modules/
+dist/
+.vite/
+
+# Lockfiles with binary artifacts or temporary states (optional, but keep source pyproject.toml safe)
+*.log
