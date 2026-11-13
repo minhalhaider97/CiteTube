@@ -7,12 +7,12 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Geist', 'sans-serif'],
+        sans: ['Poppins', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
         brand: {
-          red: '#FF3B30',
+          red: '#FF3B3B',
           darkBg: '#0D0D0E',
           cardBg: '#141416',
           sidebarBg: '#101012',

@@ -7,7 +7,12 @@ class Settings(BaseSettings):
     groq_chat_model: str                       # main model (you already have this)
     groq_fast_model: str | None = None                  # fast model for the first four tasks
     groq_reasoning_effort: str | None = None             # per-task overrides
-    # ... your other fields ...
+    allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    fastembed_threads: int = 1
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
 
     model_config = SettingsConfigDict(
         env_file=str(Path(__file__).resolve().parent.parent.parent / ".env"),

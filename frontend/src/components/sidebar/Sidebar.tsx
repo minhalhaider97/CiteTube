@@ -1,166 +1,122 @@
-import { useState } from 'react';
-import { 
-  Plus, 
-  Search, 
-  Video, 
-  Settings, 
-  Keyboard, 
-  LogOut, 
-  MoreHorizontal,
-  ChevronDown,
-  Layers,
-  GitFork
+import { useMemo, useState } from 'react';
+import {
+  ChevronDown, ChevronLeft, ChevronRight, Command, LogOut, MoreHorizontal,
+  Plus, Search, Settings, Video, X,
 } from 'lucide-react';
 import logoFull from '../../assets/Vector-2.png';
+import logoMark from '../../assets/Vector.png';
 
-interface SidebarProps {
-  chats: Array<{ id: string; title: string }>;
+export type SidebarChat = { id: string; title: string; created_at: string };
+
+type SidebarProps = {
+  chats: SidebarChat[];
   activeChatId: string | null;
+  collapsed: boolean;
+  mobileOpen: boolean;
+  userEmail?: string;
+  onToggle: () => void;
+  onCloseMobile: () => void;
   onSelectChat: (id: string) => void;
   onNewChat: () => void;
   onLogout: () => void;
-}
+};
 
-export default function Sidebar({ chats, activeChatId, onSelectChat, onNewChat, onLogout }: SidebarProps) {
+export default function Sidebar({
+  chats, activeChatId, collapsed, mobileOpen, userEmail, onToggle,
+  onCloseMobile, onSelectChat, onNewChat, onLogout,
+}: SidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const filteredChats = useMemo(
+    () => chats.filter((chat) => chat.title.toLowerCase().includes(searchTerm.toLowerCase())),
+    [chats, searchTerm],
+  );
+  const [now] = useState(() => Date.now());
+  const today = filteredChats.filter(
+    (chat) => now - new Date(chat.created_at).getTime() < 24 * 60 * 60 * 1000,
+  );
+  const previous = filteredChats.filter(
+    (chat) => now - new Date(chat.created_at).getTime() >= 24 * 60 * 60 * 1000,
+  );
+  const initials = (userEmail || 'CT').slice(0, 2).toUpperCase();
 
-  // Example categorization matching Image 2
-  const todayChats = chats.slice(0, 2);
-  const previousChats = chats.slice(2);
+  const renderGroup = (label: string, group: SidebarChat[]) => (
+    <div className="space-y-1">
+      {!collapsed && <p className="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-600">{label}</p>}
+      {group.map((chat) => (
+        <button
+          key={chat.id}
+          type="button"
+          title={chat.title}
+          onClick={() => { onSelectChat(chat.id); onCloseMobile(); }}
+          className={`group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs transition-all duration-200 ${
+            activeChatId === chat.id
+              ? 'bg-white/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)]'
+              : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
+          } ${collapsed ? 'justify-center' : ''}`}
+        >
+          <Video className={`h-3.5 w-3.5 shrink-0 ${activeChatId === chat.id ? 'text-[#FF3B3B]' : ''}`} />
+          {!collapsed && <span className="min-w-0 flex-1 truncate">{chat.title}</span>}
+          {!collapsed && <MoreHorizontal className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100" />}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
-    <aside className="flex flex-col h-screen w-64 bg-[#101012] border-r border-[#232326] p-3 select-none shrink-0 font-sans text-xs">
-      {/* Top Header Logo */}
-      <div className="flex items-center justify-between px-2 py-2 mb-2">
-        <img src={logoFull} alt="CiteTube Logo" className="h-6 w-auto object-contain" />
-        <button className="text-neutral-500 hover:text-white p-1 rounded-md hover:bg-neutral-800/50">
-          <Layers className="h-4 w-4" />
+    <>
+      {mobileOpen && <button type="button" aria-label="Close navigation" onClick={onCloseMobile} className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden" />}
+      <aside className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-white/[0.07] bg-[#0c0c0f]/95 p-3 shadow-2xl backdrop-blur-xl transition-all duration-300 md:relative md:z-20 md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'md:w-[72px]' : 'w-[280px] md:w-[260px]'}`}>
+        <div className="mb-3 flex h-10 items-center justify-between px-1">
+          {!collapsed && <img src={logoFull} alt="CiteTube" className="h-6 w-auto" />}
+          {collapsed && <img src={logoMark} alt="CiteTube" className="mx-auto h-7 w-7 object-contain" />}
+          <button type="button" onClick={onToggle} className="hidden rounded-lg p-2 text-zinc-500 transition hover:bg-white/[0.06] hover:text-white md:block" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+          <button type="button" onClick={onCloseMobile} className="rounded-lg p-2 text-zinc-500 hover:bg-white/[0.06] hover:text-white md:hidden" aria-label="Close sidebar"><X className="h-4 w-4" /></button>
+        </div>
+
+        <button type="button" title="New video chat" onClick={() => { onNewChat(); onCloseMobile(); }} className={`mb-3 flex h-10 items-center rounded-xl border border-white/[0.08] bg-white/[0.045] text-xs font-medium text-zinc-100 transition hover:border-[#FF3B3B]/40 hover:bg-[#FF3B3B]/[0.08] ${collapsed ? 'justify-center px-0' : 'justify-between px-3'}`}>
+          <span className="flex items-center gap-2">
+            {collapsed ? (
+              <span className="relative"><Video className="h-4 w-4 text-[#FF3B3B]" /><Plus className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-[#0c0c0f] text-[#FF3B3B]" /></span>
+            ) : <Plus className="h-4 w-4 text-[#FF3B3B]" />}
+            {!collapsed && 'New Video Chat'}
+          </span>
+          {!collapsed && <kbd className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[9px] text-zinc-500">⌘K</kbd>}
         </button>
-      </div>
 
-      {/* New Video Chat Button */}
-      <button
-        onClick={onNewChat}
-        className="flex items-center justify-between w-full rounded-lg bg-[#18181B] border border-[#27272A] px-3 py-2 text-xs font-medium text-white hover:bg-neutral-800 transition mb-3"
-      >
-        <span className="flex items-center gap-2">
-          <Plus className="h-3.5 w-3.5 text-neutral-400" />
-          <span>New Video Chat</span>
-        </span>
-        <kbd className="font-mono text-[10px] bg-[#27272A] text-neutral-400 px-1.5 py-0.5 rounded">⌘K</kbd>
-      </button>
+        {!collapsed && (
+          <label className="relative mb-4 block">
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-600" />
+            <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Filter video chats..." className="h-9 w-full rounded-xl border border-white/[0.06] bg-black/20 pl-9 pr-3 text-xs text-zinc-200 outline-none transition placeholder:text-zinc-700 focus:border-[#FF3B3B]/35" />
+          </label>
+        )}
 
-      {/* Filter / Search Input */}
-      <div className="relative mb-4">
-        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-neutral-500" />
-        <input
-          type="text"
-          placeholder="Filter chats, chunks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full rounded-md bg-[#161618] border border-[#232326] pl-8 pr-3 py-1.5 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-600 font-sans"
-        />
-      </div>
-
-      {/* Chat History List */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-        {/* TODAY Section */}
-        <div>
-          <div className="text-[10px] font-semibold tracking-wider text-neutral-500 uppercase px-2 mb-1">
-            Today
-          </div>
-          <div className="space-y-0.5">
-            {todayChats.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => onSelectChat(chat.id)}
-                className={`group flex items-center justify-between rounded-md px-2.5 py-2 cursor-pointer transition ${
-                  activeChatId === chat.id ? 'bg-[#1D1D21] text-white' : 'text-neutral-400 hover:bg-[#161618] hover:text-neutral-200'
-                }`}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Video className="h-3.5 w-3.5 shrink-0 text-neutral-500" />
-                  <span className="truncate">{chat.title}</span>
-                </div>
-                <MoreHorizontal className="h-3.5 w-3.5 text-neutral-600 opacity-0 group-hover:opacity-100 hover:text-white" />
-              </div>
-            ))}
-          </div>
+        <div className="flex-1 space-y-5 overflow-y-auto pr-1">
+          {!collapsed && renderGroup('Today', today)}
+          {!collapsed && renderGroup('Previous 7 days', previous)}
+          {filteredChats.length === 0 && !collapsed && <p className="px-3 py-6 text-center text-xs text-zinc-600">No chats found.</p>}
         </div>
 
-        {/* PREVIOUS 7 DAYS Section */}
-        <div>
-          <div className="text-[10px] font-semibold tracking-wider text-neutral-500 uppercase px-2 mb-1">
-            Previous 7 Days
-          </div>
-          <div className="space-y-0.5">
-            {previousChats.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => onSelectChat(chat.id)}
-                className={`group flex items-center justify-between rounded-md px-2.5 py-2 cursor-pointer transition ${
-                  activeChatId === chat.id ? 'bg-[#1D1D21] text-white' : 'text-neutral-400 hover:bg-[#161618] hover:text-neutral-200'
-                }`}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <GitFork className="h-3.5 w-3.5 shrink-0 text-neutral-500" />
-                  <span className="truncate">{chat.title}</span>
-                </div>
-                <MoreHorizontal className="h-3.5 w-3.5 text-neutral-600 opacity-0 group-hover:opacity-100 hover:text-white" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Footer / Account / Quota Section */}
-      <div className="pt-3 border-t border-[#232326] space-y-3">
-        {/* Quota Bar */}
-        <div className="bg-[#141416] border border-[#232326] rounded-lg p-2.5">
-          <div className="flex items-center justify-between text-[11px] mb-1.5">
-            <span className="flex items-center gap-1.5 text-neutral-400 font-medium">
-              <span className="h-2 w-2 rounded-full bg-cyan-400"></span>
-              Personal Workspace
-            </span>
-            <ChevronDown className="h-3 w-3 text-neutral-500" />
-          </div>
-          <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 mt-2 mb-1">
-            <span>Indexed Quota</span>
-            <span className="text-white">42 / 100 hrs</span>
-          </div>
-          <div className="w-full bg-[#232326] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-gradient-to-r from-red-500 to-rose-400 h-full w-[42%]"></div>
-          </div>
-        </div>
-
-        {/* Shortcuts & Settings */}
-        <div className="flex items-center justify-between text-neutral-400 text-[11px] px-1">
-          <button className="flex items-center gap-1.5 hover:text-white transition">
-            <Settings className="h-3.5 w-3.5" />
-            <span>Settings</span>
-          </button>
-          <button className="flex items-center gap-1.5 hover:text-white transition">
-            <Keyboard className="h-3.5 w-3.5" />
-            <span>Shortcuts</span>
-          </button>
-        </div>
-
-        {/* User Card */}
-        <div className="flex items-center justify-between pt-1">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full bg-neutral-700 flex items-center justify-center font-semibold text-white text-xs">
-              AV
+        {!collapsed && (
+          <div className="mt-3 space-y-3 border-t border-white/[0.06] pt-3">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3">
+              <div className="flex items-center justify-between text-[10px] text-zinc-500"><span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Personal workspace</span><ChevronDown className="h-3 w-3" /></div>
+              <div className="mt-3 flex items-center justify-between font-mono text-[9px] text-zinc-600"><span>INDEXED QUOTA</span><span>42 / 100 HRS</span></div>
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-zinc-800"><div className="h-full w-[42%] rounded-full bg-gradient-to-r from-[#FF3B3B] to-[#FF6B70]" /></div>
             </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-xs font-medium text-white">Alex Vance</span>
-              <span className="text-[10px] text-neutral-500">alex@research.ai</span>
-            </div>
+            <div className="flex items-center justify-between px-1 text-[10px] text-zinc-600"><span className="flex items-center gap-1.5"><Settings className="h-3 w-3" />Settings</span><span className="flex items-center gap-1.5"><Command className="h-3 w-3" />Shortcuts</span></div>
           </div>
-          <button onClick={onLogout} title="Log out" className="text-neutral-500 hover:text-white p-1">
-            <LogOut className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-    </aside>
+        )}
+
+        {!collapsed && <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-600 to-zinc-800 text-[10px] font-semibold text-white">{initials}</div>
+            {!collapsed && <div className="min-w-0"><p className="text-[11px] font-medium text-zinc-200">Research workspace</p><p className="truncate text-[9px] text-zinc-600">{userEmail}</p></div>}
+          </div>
+          {!collapsed && <button type="button" onClick={onLogout} aria-label="Log out" className="rounded-lg p-2 text-zinc-600 hover:bg-white/[0.05] hover:text-white"><LogOut className="h-3.5 w-3.5" /></button>}
+        </div>}
+      </aside>
+    </>
   );
 }

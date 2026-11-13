@@ -22,6 +22,7 @@ def strip_think(text: str) -> str:
 # Tasks that default to the fast model (when `groq_fast_model` is set).
 # Everything else (answer, synthesis, audit) defaults to the main model.
 FAST_ROLES = {"condense", "planner", "doc_grader", "rewrite"}
+GPT_OSS_STRUCTURED_ROLES = {"planner", "doc_grader"}
 
 
 def resolve_model(role: str) -> str:
@@ -59,7 +60,11 @@ def get_llm(temperature: float = 0.0, max_tokens: int = 400, role: str = "answer
     model_name = resolve_model(role)
 
     kwargs: dict = {}
-    if "qwen3" in model_name.lower():
+    model_name_lower = model_name.lower()
+    if "gpt-oss" in model_name_lower and role in FAST_ROLES:
+        # Keep the fast control nodes concise while still allowing GPT-OSS to reason.
+        kwargs["reasoning_effort"] = "low"
+    elif "qwen3" in model_name_lower:
         effort = getattr(settings, "groq_reasoning_effort", None)
         if effort:
             kwargs["model_kwargs"] = {"reasoning_effort": effort}
@@ -93,5 +98,18 @@ def invoke_text(
 def invoke_structured(
     schema: Type[T], system: str, user: str, role: str, max_tokens: int = 200
 ) -> T:
-    llm = get_llm(0.0, max_tokens, role).with_structured_output(schema, method="function_calling")
+    model_name = resolve_model(role)
+    if "gpt-oss" in model_name.lower() and role in GPT_OSS_STRUCTURED_ROLES:
+        # GPT-OSS is more reliable with Groq's constrained JSON Schema output than
+        # with a forced function call. Its reasoning tokens share this output budget.
+        llm = get_llm(0.0, max(max_tokens, 768), role).with_structured_output(
+            schema,
+            method="json_schema",
+            strict=True,
+        )
+    else:
+        llm = get_llm(0.0, max_tokens, role).with_structured_output(
+            schema,
+            method="function_calling",
+        )
     return llm.invoke([SystemMessage(content=system), HumanMessage(content=user)])

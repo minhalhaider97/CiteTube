@@ -1,14 +1,19 @@
-from sentence_transformers import CrossEncoder
+from app.core.ml_models import get_reranker_model
 
-_reranker_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
 def rerank_chunks(query: str, chunks: list[dict], top_k: int = 5) -> list[dict]:
-    """Score query-chunk pairs using a cross-encoder and return top candidates[cite: 4]."""
+    """Score query-chunk pairs using a cross-encoder and return top candidates."""
     if not chunks:
         return []
 
-    pairs = [[query, chunk["content"]] for chunk in chunks]
-    scores = _reranker_model.predict(pairs)
+    documents = [chunk["content"] for chunk in chunks]
+    scores = list(
+        get_reranker_model().rerank(
+            query=query,
+            documents=documents,
+            batch_size=16,
+        )
+    )
 
     for i, chunk in enumerate(chunks):
         chunk["rerank_score"] = float(scores[i])

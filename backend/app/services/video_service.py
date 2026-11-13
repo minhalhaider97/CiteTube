@@ -1,5 +1,6 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from uuid import UUID
 from app.db.models.video import Video
 from app.db.models.transcript import TranscriptChunk
 from app.ingestion.pipeline import ingest_video
@@ -36,3 +37,15 @@ def get_video_status(db: Session, submitted_url: str) -> dict:
 
 def submit_video(db: Session, url: str) -> tuple[Video, bool]:
     return ingest_video(db, url)
+
+
+def get_video_transcript(db: Session, video_id: UUID) -> list[TranscriptChunk]:
+    video = db.get(Video, video_id)
+    if not video:
+        raise ValueError("Video not found.")
+    stmt = (
+        select(TranscriptChunk)
+        .where(TranscriptChunk.video_id == video_id)
+        .order_by(TranscriptChunk.chunk_index.asc())
+    )
+    return list(db.scalars(stmt).all())

@@ -13,17 +13,32 @@ from app.services.chat_service import (
 
 router = APIRouter()
 
+
+def _serialize_chat(chat) -> ChatResponse:
+    video = chat.video
+    return ChatResponse(
+        id=chat.id,
+        user_id=chat.user_id,
+        video_id=chat.video_id,
+        title=chat.title,
+        created_at=chat.created_at,
+        youtube_id=video.youtube_video_id if video else None,
+        channel_name=video.channel_name if video else None,
+        duration_seconds=video.duration_seconds if video else None,
+    )
+
 @router.post("", response_model=ChatResponse, status_code=201)
 def create_chat(payload: ChatCreateRequest, db: Session = Depends(get_db)):
     try:
-        return create_chat_session(db, user_id=payload.user_id, video_id=payload.video_id)
+        chat = create_chat_session(db, user_id=payload.user_id, video_id=payload.video_id)
+        return _serialize_chat(chat)
     except ValueError as e:
         status = 404 if "not found" in str(e).lower() else 409
         raise HTTPException(status_code=status, detail=str(e))
 
 @router.get("", response_model=list[ChatResponse])
 def list_chats(user_id: str = Query(min_length=1), db: Session = Depends(get_db)):
-    return get_user_chats(db, user_id=user_id)
+    return [_serialize_chat(chat) for chat in get_user_chats(db, user_id=user_id)]
 
 @router.delete("/{chat_id}", status_code=204)
 def delete_chat(chat_id: UUID, user_id: str = Query(min_length=1), db: Session = Depends(get_db)):

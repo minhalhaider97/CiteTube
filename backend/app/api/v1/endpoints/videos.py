@@ -1,9 +1,16 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.ingestion.youtube import extract_video_id
-from app.services.video_service import submit_video, get_video_status
-from app.schemas.video import VideoSubmitRequest, VideoResponse, VideoStatusResponse
+from app.services.video_service import submit_video, get_video_status, get_video_transcript
+from app.schemas.video import (
+    TranscriptChunkResponse,
+    VideoSubmitRequest,
+    VideoResponse,
+    VideoStatusResponse,
+)
 
 router = APIRouter()
 
@@ -27,3 +34,11 @@ def status(url: str, db: Session = Depends(get_db)):
         return get_video_status(db, url)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/{video_id}/transcript", response_model=list[TranscriptChunkResponse])
+def transcript(video_id: UUID, db: Session = Depends(get_db)):
+    try:
+        return get_video_transcript(db, video_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

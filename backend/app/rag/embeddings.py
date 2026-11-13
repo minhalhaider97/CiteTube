@@ -1,10 +1,7 @@
-from sentence_transformers import SentenceTransformer
-from app.core.config import settings
+from app.core.ml_models import get_embedding_model
 
-# Initialize model (e.g., all-MiniLM-L6-v2 or text-embedding model)
-_embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def generate_question_embedding(question: str) -> list[float]:
     """Generate dense vector embedding for the user question."""
-    embedding = _embedding_model.encode(question, normalize_embeddings=True)
-    return embedding.tolist()
+    embeddings = get_embedding_model().embed([question], batch_size=1, parallel=None)
+    return next(iter(embeddings)).tolist()

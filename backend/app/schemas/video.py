@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID
 
 class VideoSubmitRequest(BaseModel):
@@ -16,9 +16,19 @@ class VideoResponse(BaseModel):
 class VideoStatusResponse(BaseModel):
     youtube_id: str
     ingestion_status: str
-    id: int | None = None
+    id: UUID | None = None
     title: str | None = None
     channel_name: str | None = None
     duration_seconds: int | None = None
     ingestion_error: str | None = None
     chunk_count: int = 0
+
+
+class TranscriptChunkResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    chunk_index: int
+    content: str
+    start_seconds: float
+    end_seconds: float

@@ -1,15 +1,15 @@
-from functools import lru_cache
-from sentence_transformers import SentenceTransformer
-from app.core.config import settings
+from app.core.ml_models import get_embedding_model
 
-embedding_model="all-MiniLM-L6-v2"
 
-@lru_cache(maxsize=1)
-def get_model() -> SentenceTransformer:
-    return SentenceTransformer(embedding_model)
+EMBEDDING_BATCH_SIZE = 16
+
 
 def embed_texts(texts: list[str]) -> list[list[float]]:
     if not texts:
         return []
-    vectors = get_model().encode(texts, normalize_embeddings=True, show_progress_bar=False)
-    return vectors.tolist()
+    vectors = get_embedding_model().embed(
+        texts,
+        batch_size=EMBEDDING_BATCH_SIZE,
+        parallel=None,
+    )
+    return [vector.tolist() for vector in vectors]
