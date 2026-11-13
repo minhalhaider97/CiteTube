@@ -3,7 +3,6 @@ import {
   Plus, 
   Search, 
   Video, 
-  Sliders, 
   Settings, 
   Keyboard, 
   LogOut, 

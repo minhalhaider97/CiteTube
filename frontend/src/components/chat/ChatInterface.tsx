@@ -2,17 +2,11 @@ import { useState, useEffect } from 'react';
 import { 
   Send, 
   Clock, 
-  Sparkles, 
-  Sliders, 
   Layers, 
   Zap, 
-  FileText, 
   ChevronRight, 
   Quote, 
-  CheckCircle2, 
   Clipboard, 
-  Search,
-  Check
 } from 'lucide-react';
 import { fetcher } from '../../lib/api';
 import { supabase } from '../../lib/auth';
@@ -24,15 +18,10 @@ export default function ChatInterface() {
   const [urlInput, setUrlInput] = useState('');
   const [ingesting, setIngesting] = useState(false);
   const [videoData, setVideoData] = useState<any>(null);
-  const [chats, setChats] = useState<Array<{ id: string; title: string }>>([
-    { id: '1', title: 'What Is Agentic RAG?' },
-    { id: '2', title: 'Backends for Frontends Explained' },
-    { id: '3', title: 'Designing LLM Orchestrators' },
-    { id: '4', title: 'Vector Search Deep Dive' },
-    { id: '5', title: 'Graph RAG & Reasoning' },
-  ]);
+  const [chats, setChats] = useState<Array<{ id: string; title: string }>>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Array<{ role: string; content: string; citations?: any[] }>>([]);
+  const [chatError, setChatError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -53,8 +42,11 @@ export default function ChatInterface() {
   const fetchUserChats = async (userId: string) => {
     try {
       const data = await fetcher(`/chats?user_id=${userId}`);
-      if (data && data.length > 0) setChats(data);
-    } catch (err) {
+      setChats(data ?? []);
+      setChatError(null);
+    } catch (err: any) {
+      setChats([]);
+      setChatError(err.message || 'Failed to load your chat history.');
       console.error('Failed to load chats', err);
     }
   };
@@ -95,6 +87,8 @@ export default function ChatInterface() {
 
   const handleSelectChat = async (chatId: string) => {
     setActiveChatId(chatId);
+    setMessages([]);
+    setChatError(null);
     setLoading(true);
     try {
       const msgs = await fetcher(`/messages/${chatId}?user_id=${user?.id}`);
@@ -106,6 +100,7 @@ export default function ChatInterface() {
         }))
       );
     } catch (err: any) {
+      setChatError(err.message || 'Failed to load this chat. Please try again.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -156,6 +151,7 @@ export default function ChatInterface() {
           setActiveChatId(null);
           setVideoData(null);
           setMessages([]);
+          setChatError(null);
         }}
         onLogout={() => supabase.auth.signOut()}
       />
@@ -185,6 +181,12 @@ export default function ChatInterface() {
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto px-8 py-8">
+          {chatError && (
+            <div className="mx-auto mb-6 max-w-3xl rounded-lg border border-red-800/50 bg-red-950/30 px-4 py-3 text-xs text-red-200">
+              {chatError}
+            </div>
+          )}
+
           {!videoData && !activeChatId ? (
             <div className="max-w-5xl mx-auto space-y-12">
               {/* Hero Banner Section */}
@@ -415,6 +417,15 @@ export default function ChatInterface() {
             /* Active Chat View */
             <div className="mx-auto flex h-full max-w-3xl flex-col justify-between">
               <div className="space-y-6 overflow-y-auto pb-6">
+                {!loading && !chatError && messages.length === 0 && (
+                  <div className="rounded-2xl border border-[#232326] bg-[#141416] px-5 py-8 text-center">
+                    <p className="text-sm font-medium text-white">This chat has no messages yet.</p>
+                    <p className="mt-1 text-xs text-neutral-400">
+                      Ask a question below to start the conversation.
+                    </p>
+                  </div>
+                )}
+
                 {messages.map((msg, index) => (
                   <div
                     key={index}

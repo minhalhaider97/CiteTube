@@ -1,18 +1,47 @@
+# Environment variables and secrets
 .env
 .env.*
 !.env.example
-.venv/
-__pycache__/
-*.py[cod]
-# Virtual Environments
+*.pem
+*.key
+
+# Python virtual environments
 .venv/
 venv/
 env/
 
-# Node Dependencies & Build Outputs
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.ipynb_checkpoints/
+
+# Frontend dependencies and build outputs
 node_modules/
 dist/
+dist-ssr/
 .vite/
 
-# Lockfiles with binary artifacts or temporary states (optional, but keep source pyproject.toml safe)
+# Local deployment metadata
+.vercel/
+.railway/
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs and local scratch files
 *.log
+/txt
